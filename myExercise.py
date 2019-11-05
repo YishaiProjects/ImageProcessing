@@ -2,6 +2,7 @@ import scipy.misc as misc
 import numpy as np
 import matplotlib.pyplot as plt
 import skimage.color as color
+from scipy.ndimage.interpolation import shift
 
 img = misc.imread('my_image.jpg')
 
@@ -19,6 +20,8 @@ print(img.size)
 # print(img.shape)
 # print(img.size)
 #
+
+# I need to check in every function that the input is a numpy array
 
 
 def normalize(image):
@@ -83,6 +86,7 @@ def mult_matrices(conversion_matrix, image):
 
 
 # I need to check that these functions are correct.
+# do refactor here
 def rgb2yiq1(imRGB):
     """
     A function that converts an RGB matrix
@@ -130,6 +134,29 @@ def yiq2rgb(imYIQ):
     return mult_matrices(conversion_matrix, imYIQ)
 
 
-img = yiq2rgb(rgb2yiq1(read_image('my_image.jpg', 2)))
-plt.imshow(img, cmap='gray')
-plt.show()
+def histogram_equalize(im_orig):
+    if type(im_orig) != np.ndarray:
+        im_orig = np.array(im_orig)
+    if im_orig.ndim == 3:
+        im_orig = rgb2yiq1(im_orig)
+        im_orig_yiq = im_orig
+        im_orig = im_orig[:, :, 0]
+    im_orig = im_orig * 255                             #check that 255 is good
+                                                        #and not 256
+    hist_orig = np.histogram(im_orig, bins=256, range=(0, 256))
+    cumulative_histogram = np.cumsum(hist_orig[0])
+    index_of_first_non_zero = np.argmin(cumulative_histogram)
+    cumulative_histogram = shift(cumulative_histogram,
+                                 -index_of_first_non_zero)
+    mapping_table = cumulative_histogram / im_orig.size
+    mapping_table *= 255
+    mapping_table = np.round(mapping_table)
+
+
+
+
+
+
+# img = yiq2rgb(rgb2yiq1(read_image('my_image.jpg', 2)))
+# plt.imshow(img, cmap='gray')
+# plt.show()
