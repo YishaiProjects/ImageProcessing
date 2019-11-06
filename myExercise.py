@@ -134,28 +134,47 @@ def yiq2rgb(imYIQ):
     return mult_matrices(conversion_matrix, imYIQ)
 
 
-def histogram_equalize(im_orig):
-    if type(im_orig) != np.ndarray:
-        im_orig = np.array(im_orig)
-    if im_orig.ndim == 3:
-        im_orig = rgb2yiq1(im_orig)
-        im_orig_yiq = im_orig
-        im_orig = im_orig[:, :, 0]
-    im_orig = im_orig * 255                             #check that 255 is good
-                                                        #and not 256
-    hist_orig = np.histogram(im_orig, bins=256, range=(0, 256))
+def histogram_eq_helper(image, hist_orig):
+    """
+    A function that perform a histogram
+    equalization on Y axis of RGB image \ gray scale
+    image.
+    :param hist_orig The histogram of the given image.
+    :param image: the given image as a
+    2 dimensional matrix.
+    :return: the matrix after the histogram equalization.
+    """
     cumulative_histogram = np.cumsum(hist_orig[0])
     index_of_first_non_zero = np.argmin(cumulative_histogram)
     cumulative_histogram = shift(cumulative_histogram,
                                  -index_of_first_non_zero)
-    mapping_table = cumulative_histogram / im_orig.size
+    mapping_table = cumulative_histogram / image.size
     mapping_table *= 255
     mapping_table = np.round(mapping_table)
+    return mapping_table[image]
 
 
-
-
-
+def histogram_equalize(im_orig):            # split this function to 2
+    # functions: one for RGB and one for gray scale.
+    if type(im_orig) != np.ndarray:
+        im_orig = np.array(im_orig)
+    im_orig = im_orig * 255  # check that 255 is good
+    # and not 256
+    if im_orig.ndim == 3:
+        im_orig = rgb2yiq1(im_orig)
+        hist_orig = np.histogram(im_orig, bins=256, range=(0, 256))
+        im_eq_y = histogram_eq_helper(im_orig[:, :, 0], hist_orig)
+        hist_eq = np.histogram(im_eq_y, bins=256, range=(0, 256))
+        im_orig[:, :, 0] = im_eq_y
+        im_eq = yiq2rgb(im_orig)
+    else:
+        hist_orig = np.histogram(im_orig, bins=256, range=(0, 256))
+        im_eq = histogram_eq_helper(im_orig, hist_orig)
+        hist_eq = np.histogram(im_eq, bins=256, range=(0, 256))
+    im_eq /= 255
+    im_eq = check_boundries(im_eq)        #implement a function that checks
+    #that all the values are in the range: [0,1]
+    return [im_eq, hist_orig, hist_eq]
 
 # img = yiq2rgb(rgb2yiq1(read_image('my_image.jpg', 2)))
 # plt.imshow(img, cmap='gray')

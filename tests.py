@@ -4,10 +4,11 @@ from scipy.ndimage.interpolation import shift
 
 img1 = misc.imread('my_image.jpg')
 
-img = np.array([[1, 2, 3, 4],
-                [5, 6, 7, 8],
+im2 = np.array([[[1,1,1], [1,1,1]], [[1,1,1], [1,1,1]], [[1,1,1], [1,1,1]]])
+img = np.array([[3, 3, 3, 2],
+                [2, 3, 3, 2],
                 [9, 10, 1, 12],
-                [13, 14, 15, 16]])
-im = np.array([])
+                [13, 9, 10, 10]])
+map_table = np.array([1, 1, 1, 2,2,2,2,2,3,3,3,3,3, 3])
+print(im2*2)
 
-print(im)
