@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+import os, sys, traceback, subprocess, shutil, argparse
+import numpy as np
+
+
+def presubmit():
+    print('=== Ex1 Presubmission Script ===')
+    disclaimer = """
+    Disclaimer
+    ----------
+    The purpose of this script is to make sure that your code is compliant
+    with the exercise API and some of the requirements
+    The script does not test the quality of your results.
+    Don't assume that passing this script will guarantee that you will get
+    a high grade in the exercise
+    """
+    print(disclaimer)
+
+    print('=== Check Submission ===\n')
+    if not os.path.exists('current/README.md'):
+        print('No readme!')
+        return False
+    else:
+        print('README file:\n')
+        with open('current/README.md') as f:
+            print(f.read())
+    print('\n\n')
+    print('Answer for Q1:')
+    if not os.path.exists('current/answer_q1.txt'):
+        print('Cannot find answer_q1.txt!')
+        return False
+    else:
+        with open('current/answer_q1.txt') as f:
+            print(f.read())
+
+    print('=== Load Student Library ===\n')
+    print('Loading...')
+    import current.sol1 as sol1
+
+    print('\n=== Section 3.1 ===\n')
+    print('Reading images...')
+    try:
+        filename = 'presubmit_externals/monkey.jpg'
+        im_rgb = sol1.read_image(filename, 2)
+        im_gray = sol1.read_image(filename, 1)
+        if im_rgb.dtype != np.float64:
+            print('Wrong dtype of RGB image! Returned type must be float64.')
+            return False
+        if im_rgb.ndim != 3 and im_rgb.shape[-1] == 3:
+            print('RGB image does not have 3 channels as expected!')
+            return False
+        if im_gray.dtype != np.float64:
+            print(
+                'Wrong dtype of grayscale image! Returned type must be '
+                'float64.')
+            return False
+        if im_gray.ndim != 2:
+            print('Grayscale image has too many dimensions!')
+            return False
+    except:
+        print(traceback.format_exc())
+        return False
+
+    print('\n=== Section 3.3 ===\n')
+    print('Transforming rgb->yiq->rgb')
+    try:
+        imYIQ = sol1.rgb2yiq(im_rgb)
+        sol1.yiq2rgb(imYIQ)
+    except:
+        print(traceback.format_exc())
+        return False
+
+    print('\n=== Section 3.4 ===\n')
+    try:
+        print('- Histogram equalization...')
+        im_orig = sol1.read_image('presubmit_externals/low_contrast.jpg', 2)
+        im_eq, hist_orig, hist_eq = sol1.histogram_equalize(im_orig)
+        if hist_orig.size is not 256 or hist_eq.size is not 256:
+            print('Incorrect number of bins in histogram')
+            return False
+    except:
+        print(traceback.format_exc())
+        return False
+
+    print('\n=== Section 3.5 ===\n')
+    try:
+        print('- Image quantization...')
+        im_orig = sol1.read_image('presubmit_externals/jerusalem.jpg', 1)
+        im_quant, err = sol1.quantize(im_orig, 6, 3)
+        if len(err) > 3:
+            print('Incorrect number of elements in err')
+            return False
+    except:
+        print(traceback.format_exc())
+        return False
+
+    return True
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'dir',
+        default=None,
+        nargs='?',
+        help='Dummy argument for working with the CS testing system. Has no effect.'
+    )
+    parser.add_argument(
+        '--dev',
+        action='store_true',
+        help='Development mode: Assumes all student files are '
+             'already under the directory "./current/"'
+    )
+    args = parser.parse_args()
+    if not args.dev:
+        try:
+            shutil.rmtree('current')
+            shutil.rmtree('current_tmp')
+        except:
+            pass
+        os.makedirs('current_tmp')
+        subprocess.check_call(
+            ['tar', 'xvf', sys.argv[1], '-C', 'current_tmp/'])
+        os.rename('current_tmp/ex1', 'current')
+    if not os.path.isfile('current/__init__.py'):
+        with open('current/__init__.py', 'w') as f:
+            f.write(' ')
+    ### Supress matplotlib figures if display not available ###
+    if os.getenv('DISPLAY') is None or os.getenv('DISPLAY') == '':
+        import matplotlib
+
+        matplotlib.use('PS')
+    ###########
+    if not presubmit():
+        print('\n\n\n !!!!!!! === Presubmission Failed === !!!!!!! ')
+    else:
+        print('\n\n=== Presubmission Completed Successfully ===')
+    print("""\n\n\n
+    Please go over the output and verify that there were no failures / warnings.
+    Remember that this script tested only some basic technical aspects of your implementation.
+    It is your responsibility to make sure your results are actually correct and not only
+    technically valid.""")
